@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# gmsh / mesh scratch
+*.msh
+*.geo_unrolled
+
+# OpenFOAM run-time output
+openfoam/**/[0-9]*/
+!openfoam/**/0/
+openfoam/**/processor*/
+openfoam/**/postProcessing/
+openfoam/**/*.foam
+openfoam/**/log.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
