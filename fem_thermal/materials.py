@@ -118,8 +118,10 @@ class Scenario:
 
 
 # Nominal volumetric power density in the fuel compacts [W/m^3]. Representative of
-# a gas-cooled microreactor fuel compact (~tens of MW/m^3 in the compact itself).
-Q_NOMINAL = 30.0e6
+# a gas-cooled microreactor fuel compact (~tens of MW/m^3 in the compact itself);
+# tuned so the normal-operation peak fuel temperature lands in the physically
+# expected HTGR range (~900-1000 C).
+Q_NOMINAL = 70.0e6
 
 # Decay heat a short time after shutdown is a few percent of nominal.
 DECAY_FRACTION = 0.03
@@ -137,9 +139,9 @@ NORMAL = Scenario(
 PASSIVE = Scenario(
     name="Loss of forced cooling (decay heat, passive radiation)",
     q_fuel=Q_NOMINAL * DECAY_FRACTION,
-    h_coolant=25.0,            # weak natural convection in stagnant helium
-    T_coolant=600.0,
-    h_outer=6.0,               # weak natural convection to vessel gap
-    T_inf=400.0,
-    radiation=True,            # radiative rejection now carries the load
+    h_coolant=0.0,             # forced flow lost: channels no longer remove heat
+    T_coolant=600.0,           # (unused when h_coolant = 0)
+    h_outer=6.0,               # weak natural convection to the vessel gap
+    T_inf=400.0,               # vessel/ambient sink
+    radiation=True,            # radiative rejection from the outer surface carries the load
 )

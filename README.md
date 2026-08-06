@@ -30,7 +30,9 @@ Project For Radiant/
 ├── docs/
 │   ├── 01_system_requirements.md ← what the models must do + acceptance criteria
 │   ├── 02_architecture.md        ← module design, data flow, numerical methods
-│   └── 03_verification_validation.md ← V&V plan: benchmarks, metrics, tolerances
+│   ├── 03_verification_validation.md ← V&V plan: benchmarks, metrics, tolerances
+│   ├── 04_decision_log.md        ← ADRs: key technical decisions + rationale
+│   └── 05_outcomes_log.md        ← chronological results / engineering notebook
 ├── fem_thermal/                  ← Part 1: Python FEM solver
 │   ├── materials.py              ← k(T), scenarios, TRISO limit
 │   ├── mesh.py                   ← gmsh prismatic-block mesh → numpy arrays
@@ -44,10 +46,40 @@ Project For Radiant/
 
 - [x] Requirements, architecture, V&V plan
 - [x] Materials model and mesh generator
-- [ ] FEM solver core (assembly + Newton)
-- [ ] Verification benchmarks
-- [ ] Scenario runs + figures
+- [x] FEM solver core (assembly + Newton with analytic tangent)
+- [x] Verification benchmarks — **5/5 pass** (MMS order p = 1.999)
+- [x] Scenario runs + figures
 - [ ] OpenFOAM CFD case
+
+## Results snapshot (Part 1 — FEM)
+
+| Scenario | Peak fuel T | TRISO margin |
+|---|---|---|
+| Normal operation (forced helium cooling) | 822 °C | 778 K |
+| Loss of forced cooling (decay heat, passive radiation) | 360 °C | 1240 K |
+
+TRISO integrity limit: 1600 °C. The loss-of-forced-cooling case rejects decay heat
+**entirely by radiation** from the block's outer surface and still holds the fuel
+~1240 K below the limit — a quantified "walk-away safe" demonstration.
+
+**Verification** (`python fem_thermal/verify.py`):
+
+| Test | Metric | Result | Criterion |
+|---|---|---|---|
+| Patch test | L2 error | 4.9e-16 | < 1e-10 |
+| MMS order of accuracy | observed p | **1.999** | 1.8–2.2 |
+| Analytic Jacobian vs FD | rel. diff | 2.1e-8 | < 1e-6 |
+| Newton quadratic convergence | — | pass | — |
+| Global energy balance | closure | 0.000 % | ≤ 1.0 % |
+
+Figures: `fem_thermal/figures/temperature_fields.png`, `.../convergence.png`.
+
+Reproduce everything:
+
+```bash
+python fem_thermal/verify.py   # V&V suite
+python fem_thermal/main.py     # scenarios + figures
+```
 
 ## Environment
 
@@ -58,4 +90,9 @@ Python 3.13, numpy, scipy, matplotlib, gmsh (all present). OpenFOAM runs in WSL2
 
 Start with `docs/01_system_requirements.md`. Each requirement carries an ID that is
 referenced by the architecture and by the V&V acceptance criteria, so the model,
-the reasons it exists, and the evidence it works are traceable end to end.
+the reasons it exists, and the evidence it works are traceable end to end. Then:
+
+- `docs/04_decision_log.md` — *why* the model is built the way it is (ADR-1..13),
+  including the two mid-build physics corrections (ADR-11, ADR-12).
+- `docs/05_outcomes_log.md` — *what happened*: a dated record of results, the V&V
+  metrics achieved, and the peak-temperature / margin numbers.
