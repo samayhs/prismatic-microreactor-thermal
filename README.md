@@ -1,15 +1,49 @@
 # Prismatic Gas-Cooled Microreactor — Thermal Modeling Study
 
-A self-contained thermal-modeling portfolio project demonstrating **finite element
-method (FEM)**, **computational fluid dynamics (CFD)**, and **radiation heat
-transport** on a geometry representative of a helium-cooled, TRISO-fueled
-microreactor (the class of reactor Radiant is building).
+## What this project is
 
-The project is deliberately structured like a small analysis campaign rather than a
-script: it opens with **requirements**, an **architecture**, and a **verification &
-validation (V&V) plan**, and only then implements and runs the models. That
-ordering mirrors how safety-relevant nuclear thermal analysis is actually produced
-and reviewed.
+This project **models the temperature inside the fuel block of a helium-cooled,
+TRISO-fueled nuclear microreactor** — the class of reactor Radiant is building — to
+answer one safety-critical question:
+
+> **Does the fuel stay below its 1600 °C integrity limit — both at full power, and
+> if all active (forced) cooling is lost?**
+
+Concretely, it takes a 2D cross-section of a hexagonal graphite fuel block with
+interleaved fuel compacts and helium coolant channels, and computes the steady-state
+temperature field for two cases:
+
+1. **Normal operation** — full fission power, helium actively cooling the channels.
+2. **Loss of forced cooling** — the blower stops; only decay heat is produced and the
+   block must shed it *passively*, by thermal **radiation** from its outer surface to
+   the vessel.
+
+The physics is solved **two independent ways** — a from-scratch finite-element (FEM)
+conduction solver written in Python, and an OpenFOAM finite-volume (CFD) case — so the
+two methods cross-check each other.
+
+### What it found
+
+| Case | Peak fuel temperature | Margin to the 1600 °C limit |
+|---|---|---|
+| Normal operation | **822 °C** | 778 K |
+| Loss of forced cooling (passive radiation only) | **360 °C** | 1240 K |
+
+Even with all forced cooling lost, radiation alone holds the fuel ~1240 K below the
+limit — a quantified demonstration of the **"walk-away safe"** behavior that defines
+this reactor class.
+
+### Why it's built like a formal analysis (not just a script)
+
+It opens with **requirements**, an **architecture**, and a **verification &
+validation (V&V) plan**, and only then implements and runs the models — mirroring how
+safety-relevant nuclear thermal analysis is actually produced and reviewed. The FEM
+solver is verified against exact/manufactured solutions (order of accuracy **p =
+1.999**, energy balance closed to **0.000 %**), so the numbers above come with
+evidence they're correct, not just plausible.
+
+Along the way it demonstrates **finite element method (FEM)**, **computational fluid
+dynamics (CFD)**, and **radiation heat transport** modeling — see the mapping below.
 
 ---
 
