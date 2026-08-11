@@ -66,7 +66,9 @@ Project For Radiant/
 │   ├── 02_architecture.md        ← module design, data flow, numerical methods
 │   ├── 03_verification_validation.md ← V&V plan: benchmarks, metrics, tolerances
 │   ├── 04_decision_log.md        ← ADRs: key technical decisions + rationale
-│   └── 05_outcomes_log.md        ← chronological results / engineering notebook
+│   ├── 05_outcomes_log.md        ← chronological results / engineering notebook
+│   ├── 06_study_guide.md         ← plain-language walkthrough (understand it)
+│   └── 07_interview_prep.md      ← likely interview Q&A + honest answers
 ├── fem_thermal/                  ← Part 1: Python FEM solver
 │   ├── materials.py              ← k(T), scenarios, TRISO limit
 │   ├── mesh.py                   ← gmsh prismatic-block mesh → numpy arrays

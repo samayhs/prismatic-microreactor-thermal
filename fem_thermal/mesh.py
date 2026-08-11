@@ -50,6 +50,7 @@ def build_block_mesh(
     n_pairs: int = 6,             # fuel/coolant pairs around the ring
     lc: float = 0.006,            # target mesh size [m]
     verbose: bool = False,
+    show: bool = False,           # open the interactive gmsh viewer before returning
 ) -> BlockMesh:
     gmsh.initialize()
     if not verbose:
@@ -155,6 +156,9 @@ def build_block_mesh(
 
     edges_cool = collect_edges(pg_cool)
     edges_out = collect_edges(pg_out)
+
+    if show:
+        gmsh.fltk.run()          # interactive viewer: zoom/pan/inspect elements
 
     gmsh.finalize()
 
