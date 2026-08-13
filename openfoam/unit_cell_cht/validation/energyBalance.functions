@@ -1,0 +1,67 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+// Function objects for the energy-balance check. Append this block's CONTENTS into
+// the `functions{}` entry of system/controlDict, then run:
+//
+//     chtMultiRegionFoam -postProcess -latestTime
+//
+// IMPORTANT (multi-region): these must run through the SOLVER's -postProcess mode
+// (chtMultiRegionFoam), NOT the standalone `postProcess` utility. The solver loads
+// every region into the object registry, so each `region` tag below resolves; the
+// standalone utility loads only one region and the lookups fail. See TROUBLESHOOTING.md.
+
+functions
+{
+    // mass-flow-weighted coolant outlet temperature [K]
+    Tout
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        region          fluid;
+        writeControl    timeStep;   writeInterval 1;
+        log             true;       writeFields false;
+        regionType      patch;      name outlet;
+        operation       weightedAverage;
+        weightField     phi;
+        fields          (T);
+    }
+
+    // net mass flow through outlet [kg/s]  (compressible phi is a mass flux)
+    mdotOut
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        region          fluid;
+        writeControl    timeStep;   writeInterval 1;
+        log             true;       writeFields false;
+        regionType      patch;      name outlet;
+        operation       sum;        fields (phi);
+    }
+
+    // net mass flow through inlet [kg/s]  (negative: inflow)
+    mdotIn
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        region          fluid;
+        writeControl    timeStep;   writeInterval 1;
+        log             true;       writeFields false;
+        regionType      patch;      name inlet;
+        operation       sum;        fields (phi);
+    }
+
+    // integrated heat flux across the coolant wall [W]  (= Q into coolant)
+    wallHeatFlux
+    {
+        type            wallHeatFlux;
+        libs            ("libfieldFunctionObjects.so");
+        region          fluid;
+        writeControl    timeStep;   writeInterval 1;
+        log             true;
+        patches         (fluid_to_solid);
+    }
+}
+
+// Q_gen (generated power) is q''' * V_fuel; V_fuel comes from the fuel cellZone
+// volume. Together with Tout/mdot above the energy balance closes to ~0.01%.
+// energy_balance.py reproduces all of this by reading the raw fields directly.
+// ************************************************************************* //

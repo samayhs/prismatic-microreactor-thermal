@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Nuclear-grade graphite matrix (representative constant properties). The 2D FEM
+// used k(T) falling from ~130 to ~50 W/mK; at the ~700-900 C operating range a
+// constant 60 W/mK is representative. Documented as a modelling simplification.
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       constIso;
+    thermo          hConst;
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       12.011;      // carbon (nominal, solid)
+    }
+    equationOfState
+    {
+        rho             1750;        // kg/m^3  nuclear graphite
+    }
+    transport
+    {
+        kappa           60;          // W/(m K)
+    }
+    thermodynamics
+    {
+        Hf              0;
+        Cp              1800;        // J/(kg K)  graphite at temperature
+    }
+}
+
+// ************************************************************************* //

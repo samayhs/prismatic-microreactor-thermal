@@ -1,0 +1,9 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/CleanFunctions"
+
+cleanCase
+rm -rf constant/fluid constant/solid constant/polyMesh
+rm -rf 0
+rm -f unit_cell.msh
+rm -f log.*

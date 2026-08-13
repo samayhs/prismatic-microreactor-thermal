@@ -1,0 +1,17 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Top-level placeholder; each region uses system/<region>/fvSolution.
+PIMPLE
+{
+}
+
+// ************************************************************************* //

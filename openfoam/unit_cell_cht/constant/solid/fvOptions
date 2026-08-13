@@ -1,0 +1,29 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      fvOptions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Volumetric fission heat generation applied to the "fuel" cellZone (the six
+// TRISO fuel compacts), created by topoSet (see system/solid/topoSetDict).
+// volumeMode specific -> the value is a power density [W/m^3].
+fuelHeatSource
+{
+    type            scalarSemiImplicitSource;
+    timeStart       0;
+    duration        1e9;
+    selectionMode   cellZone;
+    cellZone        fuel;
+    volumeMode      specific;
+    injectionRateSuSp
+    {
+        h           (7e6 0);   // q''' [W/m^3]  (Su explicit, Sp implicit=0)
+    }
+}
+
+// ************************************************************************* //

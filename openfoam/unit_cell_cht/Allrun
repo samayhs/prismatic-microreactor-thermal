@@ -1,0 +1,26 @@
+#!/bin/bash
+cd "${0%/*}" || exit 1
+. "$WM_PROJECT_DIR/bin/tools/RunFunctions"
+
+# 1. Import the gmsh mesh and convert to OpenFOAM format
+cp geometry/unit_cell.msh .
+runApplication gmshToFoam unit_cell.msh
+
+# 2. Split the single mesh into coupled regions (fluid + solid) by cellZone
+runApplication splitMeshRegions -cellZones -overwrite
+
+# 3. Carve the six fuel compacts into a 'fuel' cellZone inside the solid region
+runApplication topoSet -region solid
+
+# 4. Fresh initial/boundary fields
+rm -rf 0
+cp -r 0.orig 0
+
+# 5. Solve the steady conjugate heat-transfer problem
+runApplication $(getApplication)
+
+# 6. Report peak temperature (hottest solid cell = peak fuel temperature)
+echo ""
+echo "=== Peak temperature history (solid region) ==="
+grep -A2 "Solving for solid region solid" log.chtMultiRegionFoam \
+    | grep "Min/max T" | tail -3

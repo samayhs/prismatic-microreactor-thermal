@@ -1,0 +1,99 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system/solid";
+    object      topoSetDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Six fuel compacts -> cellSet 'fuel' -> cellZone 'fuel' (heat-source zone).
+actions
+(
+    {
+        name    fuel;
+        type    cellSet;
+        action  new;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1      (0.018800 0.000000 0);
+            p2      (0.018800 0.000000 0.800000);
+            radius  0.006200;
+        }
+    }
+    {
+        name    fuel;
+        type    cellSet;
+        action  add;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1      (0.009400 0.016281 0);
+            p2      (0.009400 0.016281 0.800000);
+            radius  0.006200;
+        }
+    }
+    {
+        name    fuel;
+        type    cellSet;
+        action  add;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1      (-0.009400 0.016281 0);
+            p2      (-0.009400 0.016281 0.800000);
+            radius  0.006200;
+        }
+    }
+    {
+        name    fuel;
+        type    cellSet;
+        action  add;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1      (-0.018800 0.000000 0);
+            p2      (-0.018800 0.000000 0.800000);
+            radius  0.006200;
+        }
+    }
+    {
+        name    fuel;
+        type    cellSet;
+        action  add;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1      (-0.009400 -0.016281 0);
+            p2      (-0.009400 -0.016281 0.800000);
+            radius  0.006200;
+        }
+    }
+    {
+        name    fuel;
+        type    cellSet;
+        action  add;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1      (0.009400 -0.016281 0);
+            p2      (0.009400 -0.016281 0.800000);
+            radius  0.006200;
+        }
+    }
+    {
+        name    fuel;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+        sourceInfo
+        {
+            set fuel;
+        }
+    }
+);
+
+// ************************************************************************* //

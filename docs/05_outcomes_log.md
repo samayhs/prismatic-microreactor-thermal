@@ -65,23 +65,76 @@ primary evidence the assembly is correct.
 - Added this outcomes log (OL-001).
 - Updated the README to index the new documents and reflect Part 1 completion.
 
+## 2026-08-11 — Interview take-home: 3D OpenFOAM CFD model + validation
+Radiant advanced the process to a technical interview (Ka-Yen, Staff Thermal Modeling
+Engineer, 2026-08-20). Take-home: build a **3D CFD** model to predict peak fuel
+temperature and **demonstrate validation**. Agreed scope: representative unit cell,
+normal-operation scenario.
+
+### CHT model built (`openfoam/unit_cell_cht/`)
+- 3D unit cell: hexagonal graphite prism, central helium coolant channel, six fuel
+  compacts, 0.8 m tall. Parametric gmsh generator → `gmshToFoam` → `splitMeshRegions`.
+- Two coupled regions: `fluid` (helium) and `solid` (graphite + fuel). Fuel modeled as
+  a heat-source cellZone (`topoSet`) inside the solid to avoid disconnected regions.
+- Solver: steady `chtMultiRegionFoam`; helium as compressible ideal gas; k-epsilon
+  turbulence with wall functions; coupled thermal interface; adiabatic outer walls.
+- Operating point: helium 3 MPa, inlet 300 °C, ~10 m/s (Re ~ 1.2e4), q''' = 7 MW/m³.
+
+### Results and verification
+- **OUT-3:** First converged run (tri-prism mesh, 74.9k cells): peak fuel **581 °C**.
+  Internal checks passed — helium density 2.52 kg/m³ (matches hand-calc), fuel→wall
+  conduction ΔT ≈ 11 °C (matches cylindrical-conduction hand-calc).
+- **Tri-prism GCI study (VR-4):** 3 meshes (48k/75k/123k). Peak fuel 573→581→587 °C;
+  observed order **p = 1.96** (asymptotic range); Richardson-extrapolated **604 °C**;
+  fine-grid GCI 3.5% (±21 °C).
+- **OUT-4 — mesh non-orthogonality:** `checkMesh` showed max ~86° (borderline) on the
+  extruded triangular-prism mesh; root cause is triangles on the curved boundaries.
+- **Mesh-quality fix (ADR-17):** a structured boundary layer was attempted but blocked
+  by a gmsh limitation (its 2D-only BL field cannot be applied to the conformal
+  internal coolant wall, which is adjacent to 3 surfaces after extrusion). Pivoted to
+  **hexahedral recombination + graded near-wall refinement**: max non-orthogonality
+  86° → 15°/37° (fluid/solid), average 58–62° → 3.5°/10°, cells now 100% hexahedra.
+  See `openfoam/unit_cell_cht/MESH_QUALITY.md`.
+- **Hex re-run:** peak fuel **668 °C** (28.3k hex), converged; y⁺ ≈ 18.6 on the channel
+  wall. The +87 °C shift vs the tri mesh confirms near-wall resolution matters.
+- **Hex GCI study (VR-4):** 3 hex meshes (14.6k / 28.3k / 56.5k). Peak fuel
+  669.3 → 668.3 → 672.0 °C — grid-independent to **±2 °C (0.56% spread across a 4×
+  cell range)**. Convergence is oscillatory (solution at its numerical noise floor),
+  so the oscillation amplitude is reported as the uncertainty rather than a formal
+  Richardson extrapolation. **Result: peak fuel = 670 ± 2 °C, ~996 °C TRISO margin.**
+  The ~66 °C gap vs the tri-prism extrapolation (604 °C) is due to the hex mesh's
+  graded near-wall resolution capturing the film ΔT the coarse tri mesh smeared — the
+  hex value is the more trustworthy one.
+- **Energy balance (validation):** three independent heat measures on the converged
+  hex solution agree to **0.01%** — Q_gen = q'''·V_fuel = 3953.8 W, interface
+  wall-flux Q_wall = 3953.8 W, coolant enthalpy rise Q_cool = ṁ·cp·ΔT = 3953.3 W.
+  Mass conserves to 0.000% (ṁ = 5.05 g/s in = out); coolant bulk ΔT = 150.8 K
+  (outlet 451 °C), matching the hand-calc (~154 K). Script:
+  `openfoam/unit_cell_cht/validation/`.
+- **OUT-6 — post-processing debug:** custom `surfaceFieldValue`/`volFieldValue`
+  function objects failed (silent / objectRegistry errors) in the multi-region case.
+  Root cause: the standalone `postProcess` utility loads only one region, so
+  region-tagged FOs can't resolve. Fix: define FOs in `controlDict`'s `functions{}`
+  with a `region` tag and run via the solver's `chtMultiRegionFoam -postProcess`
+  (loads all regions). The fixed FOs return T_out = 723.83 K and ṁ = 5.047 g/s —
+  identical to the raw-field Python parser, cross-validating both. Full write-up in
+  `validation/TROUBLESHOOTING.md`; working block in `validation/energyBalance.functions`.
+
 ## Open items / next
-- **Part 2 (OpenFOAM):** build the `chtMultiRegionFoam` + `fvDOM` helium-channel
-  case in WSL2 and execute the FEM–CFD cross-check (VR-5). *(in progress)*
-- **Solution verification:** run the ≥3-mesh convergence / GCI study on peak fuel
-  temperature (VR-4) and attach the numerical uncertainty band to the reported
-  value.
-- **Extensions (not scheduled):** transient time integration with an ANS-5.1 decay
-  curve; enclosure/view-factor radiation; 3D with axial coolant enthalpy rise.
+- **FEM–CFD cross-check (VR-5):** compare the 3D CFD against the 2D FEM sub-problem.
+- **Figures + interview write-up** for the 3D model and its validation.
+- **Extensions (not scheduled):** snappyHexMesh inflation layers; passive/LOFC case in
+  3D; transient with an ANS-5.1 decay curve.
 
 ## Status summary
 | Component | State |
 |---|---|
-| Requirements / architecture / V&V plan | complete |
-| Materials + mesh | complete |
-| FEM solver core | complete |
-| Verification suite | complete (5/5) |
-| Scenario runs + figures | complete |
-| Decision & outcomes logs | complete |
-| Solution-verification (GCI) study | pending |
-| OpenFOAM CFD cross-check | in progress |
+| 2D FEM solver + verification (5/5) | complete |
+| 3D CHT model (`chtMultiRegionFoam`) | complete |
+| 3D mesh quality (hex, near-wall) | complete |
+| 3D peak fuel temperature (converged) | complete (670 ± 2 °C, hex mesh) |
+| Tri-prism GCI study | complete (p = 1.96, 604 ± 3.5%) |
+| Hex GCI study | complete (670 ± 2 °C, grid-independent) |
+| Energy balance | complete (0.01% closure, 3 measures) |
+| FEM–CFD cross-check | pending |
+| Figures + interview write-up (3D) | pending |

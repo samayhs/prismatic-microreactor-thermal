@@ -157,4 +157,61 @@ strengthens the result (VR-5).
 `fvDOM` radiation) and compare peak solid temperature and wall flux against the FEM.
 **Alternatives:** Commercial CFD (STAR-CCM+/Fluent); no cross-check.
 **Consequences:** Demonstrates finite-element vs finite-volume fluency and provides
-an independent corroboration path. Runs in WSL2/Ubuntu. (In progress.)
+an independent corroboration path. Runs in WSL2/Ubuntu. (Superseded in scope by
+ADR-14: the CFD became a full 3D model per the interview take-home.)
+
+## ADR-14 — Represent the 3D CFD as a prismatic unit cell
+**Status:** Accepted
+**Context:** The interview take-home asks for a 3D CFD model predicting peak fuel
+temperature. Modeling a whole block in 3D is expensive and hard to validate in the
+available time.
+**Decision:** Model a representative **unit cell** — one hexagonal graphite prism with
+a central helium coolant channel and six surrounding fuel compacts, extruded 0.8 m.
+**Alternatives:** Full extruded hex block (heavy); single fuel-pin cell (too reduced).
+**Consequences:** Standard prismatic-HTGR thermal-hydraulics practice; tractable mesh
+and run times; clean to validate. Unit-cell symmetry justifies adiabatic outer walls,
+which makes the steady energy balance exact (all heat leaves via the coolant).
+
+## ADR-15 — Fuel as a heat-source cellZone inside a single solid region
+**Status:** Accepted
+**Context:** The six fuel compacts are geometrically disconnected. Making each a
+separate mesh region caused `splitMeshRegions` to spawn one region per compact
+(fuel + region1..5), which is unworkable.
+**Decision:** Use **two** mesh regions only — `fluid` and `solid` — and apply the
+volumetric fission heat via `fvOptions` to a `fuel` cellZone carved inside the solid
+by `topoSet`.
+**Alternatives:** Separate fuel regions (fragmented mesh); concentric fuel annulus
+(physically unfaithful).
+**Consequences:** Conformal, connected solid region (verified: 1 region); standard way
+to embed a heat source; peak fuel temperature = max solid temperature (fuel is the
+only source).
+
+## ADR-16 — Steady chtMultiRegionFoam with k-epsilon wall functions
+**Status:** Accepted
+**Context:** Only the steady peak temperature is of interest. Transient-to-steady is
+infeasible (fluid CFL forces ~1e-4 s steps while the graphite equilibrates over
+minutes → millions of steps). Channel Re ~ 1.2e4 is turbulent.
+**Decision:** Solve steady (`steadyState` ddt, SIMPLE-type relaxation) with k-epsilon
++ wall functions; helium as a compressible ideal gas.
+**Alternatives:** Transient run to steady (too slow); LTS/localEuler (more setup);
+laminar (wrong — would grossly over-predict the film ΔT); low-Re turbulence (finer
+near-wall, but y⁺ floor issues with wall functions).
+**Consequences:** Converges in ~500–1000 iterations. Requires a wall-function mesh
+(first cell at y⁺ ~ 30), which sets the near-wall meshing strategy (ADR-17) and how
+the grid-refinement study is run (refine core/axial, hold the wall-normal first cell).
+
+## ADR-17 — Hex recombination + graded near-wall refinement (no structured BL)
+**Status:** Accepted (supersedes the intended structured boundary layer)
+**Context:** The extruded triangular-prism mesh had max non-orthogonality ~86°
+(borderline), which degrades the diffusion (conduction) term. A structured
+boundary-layer mesh was the intended fix.
+**Decision:** gmsh's structured BoundaryLayer field is **2D-only and cannot be applied
+to the conformal internal coolant wall** (adjacent to 3 surfaces after extrusion), so
+instead: **recombine** the mesh to hexahedra (`Mesh.RecombineAll` + `recombine=True`)
+and add **distance-based graded near-wall refinement** targeting y⁺ ~ 30.
+**Alternatives:** snappyHexMesh `addLayers` (true inflation layers, larger effort);
+accept the tri-prism mesh with correctors.
+**Consequences:** Max non-orthogonality 86° → 15°/37° (fluid/solid), average 58–62° →
+3.5°/10°, 100% hexahedra (see `MESH_QUALITY.md`). Peak fuel prediction shifted 581 →
+668 °C, showing the near-wall resolution matters. y⁺ ≈ 18.6 (buffer/log range);
+snappyHexMesh inflation layers remain the route to a true structured near-wall mesh.

@@ -1,0 +1,42 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/fluid";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Helium coolant as a compressible ideal gas.
+thermoType
+{
+    type            heRhoThermo;
+    mixture         pureMixture;
+    transport       const;
+    thermo          hConst;
+    equationOfState perfectGas;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       4.0026;      // helium [g/mol]
+    }
+    thermodynamics
+    {
+        Cp              5193;        // J/(kg K)
+        Hf              0;
+    }
+    transport
+    {
+        mu              3.4e-5;      // Pa s  (~600 K helium)
+        Pr              0.68;        // -> kappa = mu*Cp/Pr ~ 0.26 W/mK
+    }
+}
+
+// ************************************************************************* //
