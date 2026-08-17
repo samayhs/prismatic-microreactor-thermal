@@ -20,10 +20,16 @@ CASE="$(pwd)"
 
 case "$CASE" in
   *" "*) echo "ERROR: OpenFOAM cannot run under a path containing spaces:";
-         echo "  $CASE"; echo "Rename the folder to remove spaces."; exit 1;;
+         echo "  $CASE"; echo "Move/rename so the path has no spaces."; exit 1;;
 esac
 
-source /opt/OpenFOAM-7/etc/bashrc
+# Require an already-loaded OpenFOAM 7 environment (portable across installs).
+if [ -z "$WM_PROJECT_DIR" ]; then
+    echo "ERROR: OpenFOAM is not loaded. Source your OpenFOAM 7 environment first:"
+    echo "  source /opt/openfoam7/etc/bashrc     # apt install (openfoam.org)"
+    echo "  source /opt/OpenFOAM-7/etc/bashrc    # source/manual install"
+    exit 1
+fi
 
 if [ ! -f geometry/unit_cell.msh ]; then
     echo "ERROR: geometry/unit_cell.msh not found."

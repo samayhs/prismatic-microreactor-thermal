@@ -45,6 +45,10 @@ evidence they're correct, not just plausible.
 Along the way it demonstrates **finite element method (FEM)**, **computational fluid
 dynamics (CFD)**, and **radiation heat transport** modeling — see the mapping below.
 
+> **Want to run it yourself?** See **[RUNNING.md](RUNNING.md)** for prerequisites,
+> installation (Python + OpenFOAM 7), and step-by-step commands. The 2D FEM part runs
+> in pure Python with no OpenFOAM required.
+
 ---
 
 ## What this demonstrates (mapped to the role)
