@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      epsilon;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// epsilon = Cmu^0.75 k^1.5 / L, L = 0.07 D
+dimensions      [0 2 -3 0 0 0 0];
+internalField   uniform 34;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 34;
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 34;
+        value           uniform 34;
+    }
+    fluid_to_solid
+    {
+        type            epsilonWallFunction;
+        value           uniform 34;
+    }
+}
+
+// ************************************************************************* //

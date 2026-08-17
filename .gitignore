@@ -6,17 +6,24 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# gmsh / mesh scratch
+# gmsh / mesh output (regenerate with geometry/make_unit_cell.py)
 *.msh
 *.geo_unrolled
+*.xao
+*.step
 
-# OpenFOAM run-time output
-openfoam/**/[0-9]*/
-!openfoam/**/0/
+# OpenFOAM run artifacts — generated in-repo by run.sh.
+# Tracked SOURCE stays: constant/regionProperties, constant/*/thermophysicalProperties,
+# constant/*/fvOptions, constant/fluid/{g,turbulenceProperties}, system/**, 0.orig/**.
+openfoam/**/polyMesh/
+openfoam/**/0/
+openfoam/**/[1-9]*/
 openfoam/**/processor*/
 openfoam/**/postProcessing/
+openfoam/**/cellToRegion
 openfoam/**/*.foam
 openfoam/**/log.*
+openfoam/**/run_hex/
 
 # OS / editor
 .DS_Store

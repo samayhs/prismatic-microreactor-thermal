@@ -1,0 +1,37 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 0 1 0 0 0];
+internalField   uniform 573;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 573;      // 300 C helium inlet
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 573;
+        value           uniform 573;
+    }
+    fluid_to_solid
+    {
+        type            compressible::turbulentTemperatureCoupledBaffleMixed;
+        value           uniform 573;
+        Tnbr            T;
+        kappaMethod     fluidThermo;
+    }
+}
+
+// ************************************************************************* //

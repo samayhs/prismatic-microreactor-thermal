@@ -1,0 +1,34 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/solid";
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 0 1 0 0 0];
+internalField   uniform 573;
+
+boundaryField
+{
+    outerWall
+    {
+        type            zeroGradient;     // unit-cell symmetry -> adiabatic
+    }
+    solidEnds
+    {
+        type            zeroGradient;     // axial symmetry -> adiabatic
+    }
+    solid_to_fluid
+    {
+        type            compressible::turbulentTemperatureCoupledBaffleMixed;
+        value           uniform 573;
+        Tnbr            T;
+        kappaMethod     solidThermo;
+    }
+}
+
+// ************************************************************************* //

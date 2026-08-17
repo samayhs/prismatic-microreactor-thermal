@@ -1,0 +1,25 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Absolute thermodynamic pressure (perfectGas density depends on it).
+dimensions      [1 -1 -2 0 0 0 0];
+internalField   uniform 3e6;      // 30 bar
+
+boundaryField
+{
+    ".*"
+    {
+        type            calculated;
+        value           uniform 3e6;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,25 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/solid";
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Required by the solid thermo framework; value is inconsequential for rhoConst.
+dimensions      [1 -1 -2 0 0 0 0];
+internalField   uniform 1e5;
+
+boundaryField
+{
+    ".*"
+    {
+        type            calculated;
+        value           uniform 1e5;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,36 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      k;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// k = 1.5 (I U)^2 with turbulence intensity I = 5%, U = 10 m/s
+dimensions      [0 2 -2 0 0 0 0];
+internalField   uniform 0.375;
+
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 0.375;
+    }
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.375;
+        value           uniform 0.375;
+    }
+    fluid_to_solid
+    {
+        type            kqRWallFunction;
+        value           uniform 0.375;
+    }
+}
+
+// ************************************************************************* //

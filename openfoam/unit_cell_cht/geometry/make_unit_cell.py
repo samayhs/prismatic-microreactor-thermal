@@ -223,6 +223,13 @@ def make_unit_cell(path: str, lc: float = LC, n_axial: int = N_AXIAL,
         gmsh.option.setNumber("Mesh.RecombineAll", 1)
         gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1)  # blossom
 
+    # export the geometry for viewing in the gmsh GUI:
+    #   .geo_unrolled -> gmsh script (references the .xao CAD file written alongside)
+    #   .step         -> self-contained CAD, opens directly (File > Open) with no companion
+    stem = os.path.splitext(path)[0]
+    gmsh.write(stem + ".geo_unrolled")
+    gmsh.write(stem + ".step")
+
     gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
     gmsh.model.mesh.generate(3)
     gmsh.write(path)

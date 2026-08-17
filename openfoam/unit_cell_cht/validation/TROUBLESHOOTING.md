@@ -51,6 +51,35 @@ With the fix, the FOs returned `weightedAverage(outlet) of T = 723.83 K` and
 the raw fields in `energy_balance.py` (723.8 K, 5.047 g/s). The two independent methods
 agreeing is itself a cross-check on the energy balance.
 
+## Fuel-zone volume (V_fuel) — the last Python-free piece
+
+Q_gen = q''' * V_fuel needs the fuel cellZone volume. The obvious FO route —
+`writeCellVolumes` then `volFieldValue` with `operation sum, fields (V)` — does NOT
+work in `-postProcess` mode: the written `V` field is not reloaded into the database,
+so the FO reports *"Requested field V not found in database and not processed"*.
+
+It doesn't matter, because OpenFOAM reports the fuel-zone volume anyway, in two places
+with no Python:
+
+1. **The solver log, from `fvOptions`.** When the `scalarSemiImplicitSource` heat
+   source initializes it prints:
+   ```
+   selected 7744 cell(s) with volume 0.0005648341
+   ```
+   This appears on every run (including `-postProcess`), so V_fuel comes for free.
+2. **The `volFieldValue` output header** (`postProcessing/.../volFieldValue.dat`):
+   ```
+   # Volume : 5.64834099e-04
+   ```
+
+Both give **V_fuel = 5.648e-4 m^3**, identical to the Python raw-field value
+(564.8 cm^3). So Q_gen = 7e6 * 5.648e-4 = 3953.8 W, matching Q_wall and Q_coolant.
+
+**Conclusion:** the entire energy balance is obtainable from pure OpenFOAM output
+(wallHeatFlux FO for Q_wall, surfaceFieldValue FOs for T_out and mdot, fvOptions log
+line for V_fuel). `energy_balance.py` is now a redundant cross-check, not a
+dependency.
+
 ## Takeaway
 
 None of these were physics or solution errors — they were all post-processing
