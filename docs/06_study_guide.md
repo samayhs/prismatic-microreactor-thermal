@@ -131,13 +131,21 @@ This is a strength you *can* own, because it's about logic, not derivation:
   evidence the code solves the equations correctly.
 - **Energy audit.** We check that total heat generated equals total heat leaving.
   It balances to **0.000%**. If the code had a bug, energy wouldn't balance.
-- **Two independent methods.** The plan is to reproduce a piece of this in OpenFOAM
-  (a different, industry-standard method) and confirm they agree.
+
+**A note on OpenFOAM (don't overclaim this).** There *is* a second, independent model —
+a 3D OpenFOAM CFD model — but it is **not a number-for-number cross-check of this FEM**.
+It uses a **different geometry** (a small extruded *unit cell*, not the full block) and
+resolves the coolant flow, so its peak (≈ 667 °C) is not meant to equal the FEM's. A
+direct FEM↔CFD comparison was **intentionally dropped** because the geometries differ.
+The FEM's trust rests on its own verification (the MMS order of accuracy and the energy
+balance above); the CFD is separately validated on its own (energy balance closes to
+0.01%, grid-independent). See `07_interview_prep.md` for the CFD side.
 
 > **Say it like this:** "I didn't just trust the output — I verified it. It reproduces
-> known-answer problems at the theoretically expected accuracy, energy balances to
-> essentially zero, and I'm cross-checking against OpenFOAM. That's the same
-> verification logic a safety analysis uses."
+> known-answer problems at the theoretically expected accuracy, and energy balances to
+> essentially zero. There's also a separate 3D OpenFOAM CFD model, but of a different
+> (unit-cell) geometry, so it's its own validated model rather than a number-for-number
+> check of the FEM. That's the same verification logic a safety analysis uses."
 
 ---
 
