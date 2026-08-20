@@ -1,0 +1,30 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      fvOptions;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Heat source for the TEMPERATURE-based solid solver (chtMultiRegionTFoam):
+// the source is injected into the T equation, so the field key is T (not h).
+// volumeMode specific -> value is q''' [W/m^3]; the semiImplicitSource takes the
+// equation's units (W/m^3 for both the h and T energy equations), so the value
+// is unchanged from the enthalpy case.
+fuelHeatSource
+{
+    type            scalarSemiImplicitSource;
+    timeStart       0;
+    duration        1e9;
+    selectionMode   cellZone;
+    cellZone        fuel;
+    volumeMode      specific;
+    injectionRateSuSp
+    {
+        T           (7e6 0);   // q''' [W/m^3]  (Su explicit, Sp implicit=0)
+    }
+}
+
+// ************************************************************************* //

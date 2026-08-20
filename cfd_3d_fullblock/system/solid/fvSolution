@@ -1,0 +1,38 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system/solid";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    // h -> stock enthalpy solver; T -> custom chtMultiRegionTFoam
+    "(h|T).*"
+    {
+        solver          GAMG;
+        smoother        symGaussSeidel;
+        tolerance       1e-6;
+        relTol          0.1;
+    }
+}
+
+PIMPLE
+{
+    nNonOrthogonalCorrectors 2;
+}
+
+relaxationFactors
+{
+    equations
+    {
+        h               1.0;   // enthalpy solver: linear conduction -> full relaxation
+        T               1.0;   // T solver: linear conduction -> full relaxation
+    }
+}
+
+// ************************************************************************* //
