@@ -1,0 +1,7 @@
+mesh,thermo,lc,solid_cells,peak_fuel_C
+ucoarse,constCp,0.00378,9248,663.33
+ucoarse,varCp,0.00378,9248,681.36
+uprod,constCp,0.00300,17280,666.91
+uprod,varCp,0.00300,17280,684.63
+ufine,constCp,0.00238,31900,663.41
+ufine,varCp,0.00238,31900,679.48

@@ -159,12 +159,13 @@ def make_unit_cell(path: str, lc: float = LC, n_axial: int = N_AXIAL,
         g = gmsh.model.addPhysicalGroup(dim, tags)
         gmsh.model.setPhysicalName(dim, g, name)
 
-    # Two mesh regions only: fluid (coolant) and solid (graphite + fuel together).
-    # The fuel compacts are geometrically disconnected, so making them their own
-    # region would fragment the mesh; instead they live inside the single connected
-    # SOLID region and get their heat source through a topoSet cellZone (see
-    # system/solid/topoSetDict). This is the standard way to embed a volumetric heat
-    # source in a CHT solid.
+    # Two mesh regions: fluid (coolant) and solid (graphite + fuel together). The fuel
+    # compacts are geometrically disconnected, so a separate fuel region would split
+    # into one region per compact (fluid + graphite + 6 fuel = 8 regions). Instead the
+    # fuel lives inside the single SOLID region as a topoSet heat-source cellZone. The
+    # solid uses temperature-dependent Cp(T) and k(T) (see constant/solid/
+    # thermophysicalProperties); a distinct lower k for the compacts would require the
+    # 8-region split and is a ~2 C effect (see MODEL.md).
     phys(3, fluid_vols, "fluid")
     phys(3, graph_vols + fuel_vols, "solid")
     phys(2, inlet, "inlet")

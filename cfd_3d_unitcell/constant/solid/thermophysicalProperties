@@ -1,0 +1,61 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Nuclear-grade graphite matrix with TEMPERATURE-DEPENDENT properties, required for a
+// credible transient (Cp sets the thermal inertia rho*Cp*dT/dt; it does not affect the
+// steady result). The fuel compacts live in this same solid region (as a heat-source
+// cellZone) and share these curves; rho*Cp of a graphite-matrix compact is close to
+// graphite, so this is a reasonable approximation for thermal inertia. A distinct,
+// lower k for the compacts would need the 8-region split (see MODEL.md, ~2 C effect).
+//
+// Cp(T)    : quadratic fit to graphite specific heat, ~1350 -> 1810 J/kgK over the
+//            573-943 K operating band (rising from ~700 at room temperature). Valid
+//            ~300-1100 K; refit for wider transient ranges.
+// kappa(T) : linear decrease, ~71 -> 60 W/mK over the operating band, consistent with
+//            (mildly irradiated) nuclear graphite. Representative fits -- replace with
+//            vendor/fluence-specific correlations (Butland-Maddison; MHTGR-350) for
+//            licensing-grade work.
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       polynomial;      // kappa(T)
+    thermo          hPolynomial;     // Cp(T)
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       12.011;      // carbon (nominal, solid)
+    }
+    equationOfState
+    {
+        rho             1750;        // kg/m^3  nuclear graphite
+    }
+    transport
+    {
+        // kappa(T) = 88 - 0.03 T  [W/m-K]   (8 coefficients, high orders zero)
+        kappaCoeffs<8>  (88 -0.03 0 0 0 0 0 0);
+    }
+    thermodynamics
+    {
+        Hf              0;
+        Sf              0;
+        // Cp(T) = -281.9 + 3.8125 T - 1.6875e-3 T^2  [J/kg-K]
+        CpCoeffs<8>     (-281.9 3.8125 -1.6875e-3 0 0 0 0 0);
+    }
+}
+
+// ************************************************************************* //

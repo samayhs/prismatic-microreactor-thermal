@@ -143,7 +143,7 @@ This is a strength you *can* own, because it's about logic, not derivation:
 
 ## 6. The files, and what each one is for
 
-Run everything from inside the `fem_thermal/` folder.
+Run everything from inside the `fem_2d_block/` folder.
 
 | File | What it is | You'd say... |
 |---|---|---|
@@ -156,7 +156,7 @@ Run everything from inside the `fem_thermal/` folder.
 
 **To reproduce the results live:**
 ```bash
-cd fem_thermal
+cd fem_2d_block
 python verify.py     # prints the trust checks (should say 5/5 passed)
 python main.py       # runs both scenarios, writes the figures
 python plot_mesh.py  # draws the mesh

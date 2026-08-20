@@ -11,7 +11,8 @@ FoamFile
 
 solvers
 {
-    "h.*"
+    // h -> stock enthalpy solver; T -> custom chtMultiRegionTFoam
+    "(h|T).*"
     {
         solver          GAMG;
         smoother        symGaussSeidel;
@@ -29,7 +30,8 @@ relaxationFactors
 {
     equations
     {
-        h               1.0;   // linear conduction -> full relaxation is stable
+        h               1.0;   // enthalpy solver: linear conduction -> full relaxation
+        T               1.0;   // T solver: linear conduction -> full relaxation
     }
 }
 

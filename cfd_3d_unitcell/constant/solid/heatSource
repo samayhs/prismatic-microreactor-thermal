@@ -1,0 +1,20 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      heatSource;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// Volumetric fission heat source for the TEMPERATURE-based solver
+// (chtMultiRegionTFoam). Applied as an explicit W/m^3 source on the named
+// cellZone (created by topoSet, see system/solid/topoSetDict). The stock
+// enthalpy solver ignores this file and uses constant/solid/fvOptions instead;
+// keep the two q''' values in sync if you change the power density.
+
+qVol    7e6;        // volumetric heat generation [W/m^3]  (q''')
+zone    fuel;       // target cellZone
+
+// ************************************************************************* //

@@ -51,8 +51,17 @@ echo ">> topoSet (fuel)";    topoSet -region solid              > log.topoSet 2>
 rm -rf 0
 cp -r 0.orig 0
 
-echo ">> solving (chtMultiRegionFoam) ... a few minutes"
-chtMultiRegionFoam > log.chtMultiRegionFoam 2>&1
+# Custom temperature-based solid solver (removes the enthalpy solver's variable-Cp
+# bias — see solver-chtMultiRegionTFoam/ and docs). Build it once if missing.
+if ! command -v chtMultiRegionTFoam >/dev/null 2>&1; then
+    echo ">> building chtMultiRegionTFoam (first run) ..."
+    bash solver-chtMultiRegionTFoam/Allwmake > log.buildSolver 2>&1 \
+        || { echo "ERROR: solver build failed — see log.buildSolver"; exit 1; }
+    hash -r
+fi
+
+echo ">> solving (chtMultiRegionTFoam) ... a few minutes"
+chtMultiRegionTFoam > log.chtMultiRegionTFoam 2>&1
 TIME=$(foamListTimes | tail -1)
 
 # fields for the Python visualizer, and ParaView entry points
@@ -61,7 +70,7 @@ postProcess -region solid -func writeCellCentres -latestTime > /dev/null 2>&1
 postProcess -region solid -func writeCellVolumes -latestTime > /dev/null 2>&1
 touch fluid.foam solid.foam
 
-PEAK=$(awk '/Min.max T/{s=$0; sub(/.*Min.max T:/,"",s); split(s,a," "); if(a[1]+0>574) m=a[2]} END{printf "%.1f", m-273.15}' log.chtMultiRegionFoam)
+PEAK=$(awk '/Min.max T/{s=$0; sub(/.*Min.max T:/,"",s); split(s,a," "); if(a[1]+0>574) m=a[2]} END{printf "%.1f", m-273.15}' log.chtMultiRegionTFoam)
 echo ""
 echo "=================================================================="
 echo "  DONE.  peak fuel temperature = ${PEAK} C   (latest time ${TIME})"

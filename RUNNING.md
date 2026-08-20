@@ -2,9 +2,9 @@
 
 This repo has two independent parts:
 
-- **Part 1 — 2D FEM** (`fem_thermal/`): a from-scratch finite-element conduction+radiation
+- **Part 1 — 2D FEM** (`fem_2d_block/`): a from-scratch finite-element conduction+radiation
   solver in pure Python. Runs anywhere Python does — **no OpenFOAM needed.**
-- **Part 2 — 3D CFD** (`openfoam/unit_cell_cht/`): a conjugate heat-transfer model in
+- **Part 2 — 3D CFD** (`cfd_3d_unitcell/`): a conjugate heat-transfer model in
   **OpenFOAM 7**. Needs a Linux environment (or WSL on Windows).
 
 You can run Part 1 on its own if you just want the Python solver. Part 2 needs OpenFOAM.
@@ -47,12 +47,12 @@ figures without it).
 
 From the repo root:
 ```bash
-cd fem_thermal
+cd fem_2d_block
 python verify.py     # verification suite -> 5/5 PASS (MMS order of accuracy p = 1.999)
 python main.py       # both scenarios -> figures/temperature_fields.png, convergence.png
 python plot_mesh.py  # figures/mesh.png
 ```
-Outputs land in `fem_thermal/figures/`. See `docs/06_study_guide.md` for what it does.
+Outputs land in `fem_2d_block/figures/`. See `docs/06_study_guide.md` for what it does.
 
 ---
 
@@ -61,7 +61,7 @@ Outputs land in `fem_thermal/figures/`. See `docs/06_study_guide.md` for what it
 ### Step 1 — generate the mesh (Python + gmsh)
 The `.msh` is not committed (it's regenerated output), so build it first:
 ```bash
-cd openfoam/unit_cell_cht/geometry
+cd cfd_3d_unitcell/geometry
 python make_unit_cell.py     # -> unit_cell.msh (+ unit_cell.step for gmsh viewing)
 python make_toposet.py       # -> system/solid/topoSetDict (fuel heat-source zone)
 ```
@@ -70,7 +70,7 @@ python make_toposet.py       # -> system/solid/topoSetDict (fuel heat-source zon
 In a shell with OpenFOAM 7 loaded:
 ```bash
 source /opt/openfoam7/etc/bashrc            # adjust to your install path
-cd openfoam/unit_cell_cht
+cd cfd_3d_unitcell
 bash run.sh
 ```
 `run.sh` runs `gmshToFoam → splitMeshRegions → topoSet → chtMultiRegionFoam` **in place**,
@@ -79,7 +79,7 @@ Takes a few minutes.
 
 ### Step 3 — visualize (Python, no ParaView needed)
 ```bash
-cd openfoam/unit_cell_cht
+cd cfd_3d_unitcell
 python visualize_cfd.py      # -> figures/cfd_axial_profile.png, cfd_cross_section.png
 ```
 Or open `solid.foam` / `fluid.foam` in **ParaView**, click *Apply*, and color by `T`.
@@ -115,8 +115,8 @@ full record and the grid-convergence study.
 ## Repo layout
 
 ```
-fem_thermal/            2D FEM solver (Python)
-openfoam/unit_cell_cht/ 3D CFD case (OpenFOAM 7)
+fem_2d_block/            2D FEM solver (Python)
+cfd_3d_unitcell/ 3D CFD case (OpenFOAM 7)
   geometry/             mesh generator (gmsh)
   constant/ system/ 0.orig/   case source (tracked)
   validation/           energy balance, troubleshooting
@@ -128,5 +128,5 @@ docs/                   requirements, architecture, V&V, decision & outcomes log
 - **`run.sh` says the path has spaces** — move the repo to a space-free path.
 - **`run.sh` says OpenFOAM isn't loaded** — `source .../etc/bashrc` first.
 - **Function objects fail in the multi-region case** — see
-  `openfoam/unit_cell_cht/validation/TROUBLESHOOTING.md` (use `chtMultiRegionFoam
+  `cfd_3d_unitcell/validation/TROUBLESHOOTING.md` (use `chtMultiRegionFoam
   -postProcess`, not the standalone `postProcess`).

@@ -8,10 +8,11 @@ FoamFile
     object      fvOptions;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-// Volumetric fission heat generation applied to the "fuel" cellZone (the six
-// TRISO fuel compacts), created by topoSet (see system/solid/topoSetDict).
-// volumeMode specific -> the value is a power density [W/m^3].
+// Heat source for the TEMPERATURE-based solid solver (chtMultiRegionTFoam):
+// the source is injected into the T equation, so the field key is T (not h).
+// volumeMode specific -> value is q''' [W/m^3]; the semiImplicitSource takes the
+// equation's units (W/m^3 for both the h and T energy equations), so the value
+// is unchanged from the enthalpy case.
 fuelHeatSource
 {
     type            scalarSemiImplicitSource;
@@ -22,7 +23,7 @@ fuelHeatSource
     volumeMode      specific;
     injectionRateSuSp
     {
-        h           (7e6 0);   // q''' [W/m^3]  (Su explicit, Sp implicit=0)
+        T           (7e6 0);   // q''' [W/m^3]  (Su explicit, Sp implicit=0)
     }
 }
 

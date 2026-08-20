@@ -1,0 +1,29 @@
+#!/bin/bash
+###############################################################################
+# Build the custom temperature-based solid CHT solver (chtMultiRegionTFoam)
+# against OpenFOAM 7.
+#
+# NOTE: OpenFOAM 7 (2019) does NOT compile under this machine's default GCC
+# (v15 -- trips an error in OpenFOAM's own FixedList.C). GCC 11 builds it
+# cleanly, so we force g++/gcc -> g++-11/gcc-11 via a PATH shim. The prebuilt
+# OF libraries link fine against GCC-11 objects (stable libstdc++ ABI).
+#
+# Usage (WSL):  bash Allwmake
+###############################################################################
+# NOTE: no `set -e` -- OpenFOAM's etc/bashrc is not -e-safe and would abort sourcing.
+source /opt/OpenFOAM-7/etc/bashrc
+echo "OpenFOAM: WM_PROJECT_VERSION=$WM_PROJECT_VERSION  WM_OPTIONS=$WM_OPTIONS"
+echo "FOAM_USER_APPBIN=$FOAM_USER_APPBIN"
+
+# force GCC 11 for the compile
+mkdir -p /tmp/gcc11shim
+ln -sf "$(command -v g++-11)" /tmp/gcc11shim/g++
+ln -sf "$(command -v gcc-11)" /tmp/gcc11shim/gcc
+export PATH="/tmp/gcc11shim:$PATH"
+hash -r
+echo "compiler: $(g++ --version | head -1)"
+
+cd "$(dirname "$(readlink -f "$0")")"
+wclean || true
+wmake
+echo "BUILD OK -> $FOAM_USER_APPBIN/chtMultiRegionTFoam"

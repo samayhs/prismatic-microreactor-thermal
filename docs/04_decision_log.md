@@ -215,3 +215,60 @@ accept the tri-prism mesh with correctors.
 3.5°/10°, 100% hexahedra (see `MESH_QUALITY.md`). Peak fuel prediction shifted 581 →
 668 °C, showing the near-wall resolution matters. y⁺ ≈ 18.6 (buffer/log range);
 snappyHexMesh inflation layers remain the route to a true structured near-wall mesh.
+
+## ADR-18 — Temperature-dependent solid properties (Cp(T), k(T)); fuel stays a cellZone
+**Status:** Accepted
+**Context:** Transient analysis needs varying thermal capacity — the graphite thermal
+inertia ρCp(T) governs the transient response and graphite Cp varies ~2–3× over the
+temperature range (constant Cp would mis-predict the transient). Steady results are
+unaffected (Cp does not enter steady conduction).
+**Decision:** Give the solid region **temperature-dependent** properties via OpenFOAM
+`hPolynomial` (Cp(T)) + `polynomial` transport (kappa(T)), replacing the constant
+`hConst`/`constIso`. Keep the fuel as a heat-source cellZone inside the single solid
+region (it shares the solid's Cp(T)/k(T)).
+**Alternatives:** Constant properties (blocks credible transients). A distinct, lower
+`k_compact` for the fuel — which requires promoting the fuel to its own solid region.
+**Consequences:** Solid Cp and k now vary with T (representative graphite fits;
+Butland-Maddison / MHTGR-350 for licensing-grade). The steady peak temperature is
+essentially unchanged (k(T) ≈ 60–71 over the operating band vs the previous constant
+60). Verified: OpenFOAM parses the polynomials and the case still converges.
+**Why the fuel is not its own region:** the 6 fuel compacts are geometrically
+disconnected, so `splitMeshRegions` produces one region per compact — 8 regions total
+(tested and confirmed). ρCp of a graphite-matrix compact is close to graphite, so the
+shared curves are a fair approximation for thermal inertia; the only distinct-fuel
+effect not captured is the lower k_compact, worth ~2 °C. The 8-region split (or a
+single-compact / connected-fuel geometry) remains the route to distinct fuel material.
+
+## ADR-19 — Custom temperature-based solid solver (chtMultiRegionTFoam)
+**Status:** Accepted (resolves the ADR-18 variable-Cp artifact)
+**Context:** With ADR-18's `Cp(T)`, the steady peak fuel temperature rose from the
+constant-property **667 °C** to **684.6 °C** — physically impossible, since steady
+conduction `∇·(k∇T)+q‴=0` contains **no Cp**. Root cause, traced by hand to
+`heSolidThermo::calculate()`: the stock solid solver is **enthalpy-based**, solving
+`∇·(α∇h)` with `α = kappa/Cp` and `h = ∫Cp dT`. On a face the flux is
+`interp(kappa/Cp)·(h_N−h_P) = interp(kappa/Cp)·C̄p·(T_N−T_P)`, where `C̄p` is the
+*interval-mean* Cp but the `α` factor uses *nodal* Cp. The two Cp averages cancel only
+when Cp is constant; with `Cp(T)` they leave a bias. A four-mesh study (9k→57k solid
+cells, near-wall included) showed the bias is **not** a vanishing O(h²) truncation —
+it holds at ~17–18 °C and does not clear at any affordable resolution. So `Cp(T)` was
+unsafe for both steady and the transient it was meant to enable.
+**Decision:** Build a custom solver — a copy of `chtMultiRegionFoam` whose solid energy
+equation is solved directly in **temperature**:
+`ρCp(T) ∂T/∂t = ∇·(k(T)∇T) + q‴` (`solveSolid.H`). The fluid side is untouched.
+The volumetric fission heat is applied as an explicit `W/m³` source field on the `fuel`
+cellZone (`constant/solid/heatSource`), because the ρ-weighted `fvOptions` source is
+dimensioned for the enthalpy equation. Built into the user bin via
+`solver-chtMultiRegionTFoam/Allwmake` (which forces g++-11: OpenFOAM 7 will not compile
+under the machine's default g++-15).
+**Alternatives:** (a) constant band-representative Cp ≈ 1626 J/kg·K in the stock solver
+— steady-correct by construction, transient inertia good to ~15 %, zero code, but drops
+true Cp(T); (b) mesh-refine the artifact away — disproven, it does not vanish; (c)
+`laplacianFoam` — temperature-based but constant D_T, no k(T)/source/coupling, unusable.
+**Consequences:** With variable `Cp(T)`, the T-solver returns **666.92 °C** on the
+production mesh — matching the constant-Cp enthalpy result (666.91 °C) to 0.01 °C. The
+artifact is eliminated **by construction**: Cp no longer enters the steady operator, and
+`Cp(T)` acts only in the transient inertia term where it belongs. Cost: a maintained
+custom solver (rebuild via `Allwmake` on any OpenFOAM change) and the g++-11 build
+requirement. The stock `h`-based files (`constant/solid/fvOptions`, the `h` entries in
+`fvSolution`) are retained so the enthalpy solver still runs for comparison. Verified in
+`cfd_3d_unitcell/verification/` (`RESULTS.md`, `results_uniform.csv`).

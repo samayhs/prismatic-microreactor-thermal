@@ -12,18 +12,22 @@ venv/
 *.xao
 *.step
 
+# OpenFOAM solver build artifacts (wmake output for the custom T-based solver)
+cfd_3d_unitcell/solver-chtMultiRegionTFoam/Make/linux*/
+cfd_3d_unitcell/solver-chtMultiRegionTFoam/**/*.dep
+
 # OpenFOAM run artifacts — generated in-repo by run.sh.
 # Tracked SOURCE stays: constant/regionProperties, constant/*/thermophysicalProperties,
 # constant/*/fvOptions, constant/fluid/{g,turbulenceProperties}, system/**, 0.orig/**.
-openfoam/**/polyMesh/
-openfoam/**/0/
-openfoam/**/[1-9]*/
-openfoam/**/processor*/
-openfoam/**/postProcessing/
-openfoam/**/cellToRegion
-openfoam/**/*.foam
-openfoam/**/log.*
-openfoam/**/run_hex/
+cfd_3d_unitcell/**/polyMesh/
+cfd_3d_unitcell/**/0/
+cfd_3d_unitcell/**/[1-9]*/
+cfd_3d_unitcell/**/processor*/
+cfd_3d_unitcell/**/postProcessing/
+cfd_3d_unitcell/**/cellToRegion
+cfd_3d_unitcell/**/*.foam
+cfd_3d_unitcell/**/log.*
+cfd_3d_unitcell/**/run_hex/
 
 # OS / editor
 .DS_Store

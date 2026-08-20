@@ -9,7 +9,11 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+// Custom temperature-based solid CHT solver (see solver-chtMultiRegionTFoam/).
+// Solving the solid in T (not enthalpy) removes the variable-Cp discretisation
+// bias of the stock chtMultiRegionFoam. Build it once with:
+//   bash solver-chtMultiRegionTFoam/Allwmake
+application     chtMultiRegionTFoam;
 
 startFrom       latestTime;
 startTime       0;

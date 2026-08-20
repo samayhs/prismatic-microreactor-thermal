@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant/solid";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// VERIFICATION VARIANT (constant Cp). Identical to the production
+// thermophysicalProperties EXCEPT the Cp polynomial is collapsed to a single
+// constant coefficient (Cp = 1800 J/kg-K, higher orders zero). k(T) is left
+// temperature-dependent and IDENTICAL to the variable-Cp case. Same hPolynomial
+// template/code path -> only the Cp temperature-dependence differs, so
+//   delta = T_peak(varCp) - T_peak(constCp)
+// isolates the variable-Cp artifact (its artifact-free limit is exactly 0).
+// The steady result is independent of the *value* of a constant Cp.
+thermoType
+{
+    type            heSolidThermo;
+    mixture         pureMixture;
+    transport       polynomial;      // kappa(T) -- same as varCp
+    thermo          hPolynomial;     // Cp collapsed to a constant below
+    equationOfState rhoConst;
+    specie          specie;
+    energy          sensibleEnthalpy;
+}
+
+mixture
+{
+    specie
+    {
+        molWeight       12.011;
+    }
+    equationOfState
+    {
+        rho             1750;
+    }
+    transport
+    {
+        // kappa(T) = 88 - 0.03 T  [W/m-K]   (identical to varCp)
+        kappaCoeffs<8>  (88 -0.03 0 0 0 0 0 0);
+    }
+    thermodynamics
+    {
+        Hf              0;
+        Sf              0;
+        // Cp = 1800 J/kg-K (CONSTANT: higher-order terms zero)
+        CpCoeffs<8>     (1800 0 0 0 0 0 0 0);
+    }
+}
+
+// ************************************************************************* //
