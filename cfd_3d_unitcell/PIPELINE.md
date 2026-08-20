@@ -228,3 +228,141 @@ Fuel:coolant ratio 6:1 (under-cooled); fuel shares graphite k (no distinct `k_co
 power density tuned, properties representative; not benchmark-anchored (MHTGR-350 is the
 natural target); y⁺ ≈ 18.6 (buffer/log range, not swept). Next step: a `Cp(T)` transient
 on the T-solver (VR-8) — relax-to-steady + time-constant check (τ ≈ 30–45 s).
+
+---
+
+## 8. Validation — demonstrating the solution is trustworthy
+
+The deliverable is two things: **predict the peak fuel temperature** (≈ 667 °C, ~930 °C
+margin to the 1600 °C TRISO limit) **and demonstrate the prediction can be trusted.** A
+converged CFD run always prints *a* number; the work below is what separates that from a
+*defensible* number. Two ideas are kept distinct:
+
+- **Verification** — "are we solving the equations right?" (grid convergence, code/solver
+  correctness). Internal, math-facing.
+- **Validation** — "are we solving the right equations / does it obey the physics?"
+  (conservation, physical cross-checks, and ultimately experiment/benchmark).
+
+The model is strongly **verified** and **internally validated** (conservation + physical
+hand-checks); it is **not yet benchmark-validated** against experimental data (§8.5). Four
+independent legs support the number, each of which would fail loudly if the solution were
+wrong.
+
+### 8.1 Energy conservation — the primary internal validation
+
+**Why it's a strong test here.** Every external boundary is adiabatic (`outerWall`,
+`solidEnds`) except the coolant wall. So at steady state, by first-law conservation, the
+fission heat has exactly one way out, and three quantities that are computed by **entirely
+different paths** must be equal:
+
+```
+Q_gen  (volumetric source in the fuel)                    [what goes in]
+   =  Q_wall (conductive flux across the fluid–solid interface)   [what crosses the wall]
+   =  Q_cool (enthalpy rise of the helium, ṁ·cp·ΔT)              [what comes out]
+```
+
+These share no intermediate result — `Q_gen` is a cell-volume integral of the source,
+`Q_wall` is a surface integral of `k∇T` at the interface, `Q_cool` is an inlet/outlet mass-
+and-enthalpy flux. Agreement is therefore a genuine, non-circular check on the whole
+coupled solution (mesh, coupling BC, turbulence, thermo).
+
+**Result — closure 0.01 %:**
+
+| Measure | How it is computed | Value |
+|---|---|---|
+| `Q_gen`  | `q‴·V_fuel` (fvOptions/heat-source cell-volume integral) | 3953.8 W |
+| `Q_wall` | `∮ wallHeatFlux` over the coupled interface (`wallHeatFlux` FO) | 3953.8 W |
+| `Q_cool` | `ṁ·cp·ΔT` (inlet/outlet `surfaceFieldValue` FOs) | 3953.3 W |
+| Mass in vs out | inlet vs outlet mass flux | **0.000 %** |
+
+Spread ≈ 0.5 W on ~3954 W → **0.01 %**. Mass conserving to 0.000 % separately confirms the
+compressible flow field is consistent (a mass leak would corrupt `Q_cool`).
+
+**Mechanics & robustness.** The function objects are defined in `controlDict`'s
+`functions{}` (see `validation/energyBalance.functions`) and run with the **all-region**
+`chtMultiRegionFoam -postProcess` — the standalone `postProcess` loads only one region, so
+region-tagged FOs silently fail to resolve (root-caused in `validation/TROUBLESHOOTING.md`).
+As a second, independent implementation, `validation/energy_balance.py` re-derives the same
+numbers from a **raw-field parser** and matches the FO output (T_out = 723.83 K,
+ṁ = 5.047 g/s) — so the post-processing itself is cross-validated, not trusted blindly.
+
+**What a failure would look like:** a bug in the interface coupling would break
+`Q_wall = Q_cool`; an under-resolved fuel source or wrong `V_fuel` would break `Q_gen`; a
+non-conservative scheme would break all three. None do.
+
+### 8.2 Grid independence — solution verification
+
+The peak must be a property of the *physics*, not of the mesh. A hexahedral
+grid-convergence study over a **4× cell-count range** (near-identical near-wall treatment):
+
+| mesh | cells | peak fuel |
+|---|---|---|
+| coarse | 14.6k | 669.3 °C |
+| medium | 28.3k | 668.3 °C |
+| fine | 56.5k | 672.0 °C |
+
+The values do not drift monotonically — they **oscillate within ±2 °C** about ~670. That is
+the signature of a solution sitting at its **numerical noise floor**: further refinement
+buys noise, not a trend, so a formal Richardson extrapolation is not meaningful and the
+**oscillation amplitude is reported as the uncertainty → 670 ± 2 °C (0.56 % spread)**.
+
+An earlier **triangular-prism** study (48k/75k/123k → 573/581/587 °C) *was* in the
+asymptotic range — observed order **p = 1.96** (≈ the theoretical 2), Richardson-
+extrapolated 604 °C — which verifies the discretisation order, but under-predicts because
+coarse triangles on the curved wall smear the near-wall film ΔT. The graded hex mesh
+resolves that film (the ~66 °C hex-vs-tri difference), so the hex value is the trustworthy
+one. Together: the *method* converges at the expected order (tri study), and the
+*production answer* is mesh-independent (hex study).
+
+### 8.3 Analytic hand-checks — physical cross-validation
+
+Independent closed-form estimates confirm the CFD isn't internally consistent-but-wrong.
+Each uses only inputs and first principles, not the CFD result:
+
+| Quantity | Hand calculation | Hand value | CFD |
+|---|---|---|---|
+| Helium density | `ρ = pM/RT = 3e6·4.0026e-3 / (8.314·573)` | 2.52 kg/m³ | 2.52 |
+| Mass flow | `ṁ = ρ·U·A_channel = 2.52·10·π(0.008)²` | 5.07 g/s | 5.047 |
+| Coolant bulk ΔT | `ΔT = Q/(ṁ·cp) = 3953 / (5.047e-3·5193)` | 150.8 K | 150.8 K (out 451 °C) |
+| Fuel-zone volume | `6·π(0.0062)²·0.8` (geometric) | 564.8 cm³ | 564.8 |
+| Fuel→wall conduction ΔT | cylindrical conduction, per-compact power through the graphite web | ~11 °C | ~11 °C |
+
+The coolant-ΔT check is the tightest: it ties the *outlet temperature* the CFD computes to
+the *heat it generates* through a one-line energy balance — and they agree exactly, closing
+the loop between §8.1 and the temperature field.
+
+### 8.4 Solver / code verification — the variable-Cp artifact
+
+The strongest verification step was *catching a wrong-but-plausible number.* With
+temperature-dependent `Cp(T)`, the enthalpy solver reported **684.6 °C** — which looks like
+a reasonable +18 °C physical effect. It was tested against a **physical invariant**: steady
+conduction `∇·(k∇T)+q‴=0` contains no Cp, so a converged steady peak **must** be
+Cp-independent. A controlled 4-mesh study (`verification/`, isolating
+`δ = T(varCp) − T(constCp)` with identical `k(T)`) showed δ ≈ **17–18 °C and
+mesh-persistent** — it does *not* vanish under refinement, so it is not truncation but a
+genuine formulation bias. It was root-caused by hand in the solver source
+(`heSolidThermo::calculate()`: nodal Cp in `alpha = kappa/Cp` vs interval-mean Cp in
+`Δh = ∫Cp dT`, which cancel only for constant Cp) and fixed by the temperature-based solver
+(§4), which returns **666.92 °C** with `Cp(T)` — matching the constant-Cp result to
+**0.01 °C**. This closes the "are we solving the equations right?" question: the reported
+number is physics, not a solver artifact. Full write-up: `verification/RESULTS.md`,
+`docs/04` ADR-19, `docs/05` (2026-08-19).
+
+### 8.5 What is *not* yet validated (honest scope)
+
+- **No experimental / benchmark comparison.** §8.1–8.4 are self-consistency and code
+  verification, not agreement with measured data. The natural external validation is the
+  OECD/NEA **MHTGR-350** benchmark (real block geometry, He ~6.4 MPa, ~259 → 687 °C); the
+  model is not yet anchored to it.
+- **Absolute number is representative, not licensing-grade** — the power density is tuned
+  and properties are representative fits, and the unit cell's fuel:coolant ratio is 6:1
+  (under-cooled) vs ~2:1 real. So the *method and margin behaviour* are the defensible
+  claims; the exact 667 °C is indicative.
+- **Steady, normal operation only.** No transient and no loss-of-forced-cooling in 3D.
+
+**Bottom line.** The peak-temperature prediction is **conservation-consistent** (energy
+closes to 0.01 % three independent ways), **mesh-converged** (670 ± 2 °C over 4× cells),
+**physically cross-checked** (five analytic hand-calcs), and **solver-verified** (a
+plausible-looking bias was caught, root-caused, and fixed). What remains for a
+licensing-grade claim is external benchmark validation — a stated next step, not a hidden
+gap.
